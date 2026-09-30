@@ -1,0 +1,41 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:translateX="18"
+        android:translateY="18"
+        android:scaleX="0.6667"
+        android:scaleY="0.6667">
+        <!-- Eco Badge / Food bowl & Leaf representation -->
+        <!-- Glowing aura circle -->
+        <path
+            android:fillColor="#33FFFFFF"
+            android:pathData="M54,54m-46,0a46,46 0,1 1,92 0a46,46 0,1 1,-92 0" />
+        <!-- Main Food Bowl -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M24,52 C24,70 37,84 54,84 C71,84 84,70 84,52 L24,52 Z" />
+        <!-- Bowl rim / accent -->
+        <path
+            android:fillColor="#E8F5E9"
+            android:pathData="M20,48 L88,48 C90,48 91,50 90,52 C89,53 87,54 85,54 L23,54 C21,54 19,53 18,52 C17,50 18,48 20,48 Z" />
+        <!-- Sprouting organic leaf 1 (left) -->
+        <path
+            android:fillColor="#A5D6A7"
+            android:pathData="M54,46 C48,34 38,30 32,32 C30,38 34,48 46,50 C48,50 52,48 54,46 Z" />
+        <!-- Sprouting organic leaf 2 (right - vibrant green) -->
+        <path
+            android:fillColor="#66BB6A"
+            android:pathData="M54,46 C60,30 74,24 82,26 C84,34 78,46 62,50 C59,50 56,48 54,46 Z" />
+        <!-- Center Stem / Eco Sparkle -->
+        <path
+            android:fillColor="#81C784"
+            android:pathData="M52.5,46 L55.5,46 L55.5,52 L52.5,52 Z" />
+        <!-- Heart / Care emblem inside bowl -->
+        <path
+            android:fillColor="#43A047"
+            android:pathData="M54,63 C52,60 48,58 45,61 C42,64 43,68 47,72 L54,77 L61,72 C65,68 66,64 63,61 C60,58 56,60 54,63 Z" />
+    </group>
+</vector>
