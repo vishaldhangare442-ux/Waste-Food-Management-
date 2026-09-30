@@ -1,6 +1,6 @@
 {
   "name": "FoodWaste Manager",
-  "description": "Smart waste food management app with pantry inventory tracking, expiry alerts, dynamic recipe recommendation engine, and donation coordinator.",
+  "description": "Waste Food Management application featuring Donor and Recover components, real-time live delivery location tracking, food photo uploads & presets, direct donor contact number calling, and NGO & Individual food rescue coordination.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

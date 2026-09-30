@@ -8,18 +8,29 @@ import com.example.data.model.FoodItem
 import com.example.data.model.FoodStatus
 import com.example.data.model.Recipe
 import com.example.data.model.WasteLog
+import com.example.data.remote.FirestoreService
 import kotlinx.coroutines.flow.Flow
 
 class FoodRepository(
     private val foodItemDao: FoodItemDao,
     private val wasteLogDao: WasteLogDao,
-    private val donationDao: DonationDao
+    private val donationDao: DonationDao,
+    private val firestoreService: FirestoreService = FirestoreService()
 ) {
     fun getInStockItems(userId: Long): Flow<List<FoodItem>> = foodItemDao.getInStockItems(userId)
     fun getAllItems(userId: Long): Flow<List<FoodItem>> = foodItemDao.getAllItems(userId)
 
-    suspend fun insertItem(item: FoodItem): Long = foodItemDao.insertItem(item)
-    suspend fun updateItem(item: FoodItem) = foodItemDao.updateItem(item)
+    suspend fun insertItem(item: FoodItem): Long {
+        val id = foodItemDao.insertItem(item)
+        firestoreService.syncInventoryItem(if (item.id == 0L) item.copy(id = id) else item)
+        return id
+    }
+
+    suspend fun updateItem(item: FoodItem) {
+        foodItemDao.updateItem(item)
+        firestoreService.syncInventoryItem(item)
+    }
+
     suspend fun deleteItem(item: FoodItem) = foodItemDao.deleteItem(item)
 
     suspend fun markAsConsumed(item: FoodItem, reason: String = "Cooked / Consumed") {

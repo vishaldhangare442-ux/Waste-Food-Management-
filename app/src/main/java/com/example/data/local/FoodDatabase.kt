@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
         Donation::class,
         WasteLog::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FoodDatabase : RoomDatabase() {
@@ -55,6 +55,9 @@ abstract class FoodDatabase : RoomDatabase() {
     }
 
     private class DatabaseCallback : RoomDatabase.Callback() {
+        @Volatile
+        private var isSeeding = false
+
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
             CoroutineScope(Dispatchers.IO).launch {
@@ -64,8 +67,32 @@ abstract class FoodDatabase : RoomDatabase() {
             }
         }
 
+        override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+            super.onDestructiveMigration(db)
+            CoroutineScope(Dispatchers.IO).launch {
+                INSTANCE?.let { database ->
+                    seedInitialData(database)
+                }
+            }
+        }
+
+        override fun onOpen(db: SupportSQLiteDatabase) {
+            super.onOpen(db)
+            CoroutineScope(Dispatchers.IO).launch {
+                INSTANCE?.let { database ->
+                    seedInitialData(database)
+                }
+            }
+        }
+
         private suspend fun seedInitialData(db: FoodDatabase) {
-            // Seed a demo user: demo@wastewise.com / Demo123!
+            if (isSeeding) return
+            isSeeding = true
+            try {
+                if (db.userDao().getUserById(1L) != null) {
+                    return
+                }
+                // Seed a demo user: demo@wastewise.com / Demo123!
             val demoSalt = SecurityUtil.generateSalt()
             val demoHash = SecurityUtil.hashPassword("Demo123!", demoSalt)
             val demoUser = User(
@@ -339,17 +366,140 @@ abstract class FoodDatabase : RoomDatabase() {
             )
             db.recipeDao().insertRecipes(sampleRecipes)
 
-            // Seed initial donation drop-off locations
-            db.donationDao().insertDonation(
+            // Seed realistic surplus food donations showcasing Donor & Recovery components
+            val nowMs = System.currentTimeMillis()
+            val sampleDonations = listOf(
                 Donation(
                     userId = 1,
-                    foodTitle = "Unopened Pasta & Canned Goods",
-                    quantity = "4 packs",
-                    destination = "Downtown Community Food Hub",
-                    status = "Completed",
-                    notes = "Delivered to north pantry shelf"
+                    donorName = "Grand Royale Hotel & Catering",
+                    donorNumber = "+1 (555) 382-9012",
+                    foodTitle = "50 Hot Buffet Lunch Meals (Rice, Curry & Roasted Veggies)",
+                    category = "COOKED_MEALS",
+                    quantity = "50 hot meal containers",
+                    servingsEstimate = 50,
+                    weightKg = 22.0,
+                    foodPresetName = "BUFFET",
+                    preparedTimeMillis = nowMs - 7200000L,
+                    expiryHours = 5,
+                    pickupAddress = "Grand Royale Hotel, 100 Main St, Downtown",
+                    pickupLatitude = 37.7749,
+                    pickupLongitude = -122.4194,
+                    dropAddress = "St. Vincent Community Shelter, 820 Elm Street",
+                    dropLatitude = 37.7885,
+                    dropLongitude = -122.4080,
+                    currentDeliveryLat = 37.7810,
+                    currentDeliveryLng = -122.4135,
+                    deliveryProgress = 0.65f,
+                    status = "IN_TRANSIT",
+                    receiverType = "NGO",
+                    receiverName = "Hope Harvest Food Bank (NGO)",
+                    receiverPhone = "+1 (555) 789-0123",
+                    receiverDetails = "NGO Reg #501C-4491 • 150 daily sheltered guests",
+                    deliveryMethod = "VOLUNTEER_DELIVERY",
+                    courierName = "Carlos Mendez (Green Delivery #09)",
+                    courierPhone = "+1 (555) 654-3210",
+                    etaMinutes = 9,
+                    specialInstructions = "Park at loading dock B. Ask for Chef Antoine in banquet kitchen."
+                ),
+                Donation(
+                    userId = 2,
+                    donorName = "Sunrise Artisan Bakery",
+                    donorNumber = "+1 (555) 901-2345",
+                    foodTitle = "30 Fresh Organic Sourdough & French Baguettes",
+                    category = "BAKERY",
+                    quantity = "30 loaves & artisan pastries",
+                    servingsEstimate = 35,
+                    weightKg = 14.0,
+                    foodPresetName = "BAKERY",
+                    preparedTimeMillis = nowMs - 14400000L,
+                    expiryHours = 24,
+                    pickupAddress = "Sunrise Bakery, 442 Baker Street",
+                    pickupLatitude = 37.7690,
+                    pickupLongitude = -122.4467,
+                    dropAddress = "",
+                    status = "AVAILABLE",
+                    specialInstructions = "Packaged in clean kraft paper bread bags, ready for pickup anytime before 7 PM."
+                ),
+                Donation(
+                    userId = 3,
+                    donorName = "City Center Organic Supermarket",
+                    donorNumber = "+1 (555) 456-7890",
+                    foodTitle = "Fresh Farm Vegetable Crates (Spinach, Tomatoes, Carrots, Peppers)",
+                    category = "PRODUCE",
+                    quantity = "4 crates (~28 kg)",
+                    servingsEstimate = 60,
+                    weightKg = 28.0,
+                    foodPresetName = "PRODUCE",
+                    preparedTimeMillis = nowMs - 18000000L,
+                    expiryHours = 48,
+                    pickupAddress = "City Center Market, Produce Receiving, Bay #3",
+                    pickupLatitude = 37.7833,
+                    pickupLongitude = -122.4167,
+                    dropAddress = "Oak Park Family Center",
+                    dropLatitude = 37.7650,
+                    dropLongitude = -122.4250,
+                    currentDeliveryLat = 37.7833,
+                    currentDeliveryLng = -122.4167,
+                    deliveryProgress = 0.20f,
+                    status = "CLAIMED",
+                    receiverType = "INDIVIDUAL",
+                    receiverName = "Elena Rostova (Family of 5 - Individual)",
+                    receiverPhone = "+1 (555) 887-9911",
+                    receiverDetails = "Individual / Low-income family with children",
+                    deliveryMethod = "VOLUNTEER_DELIVERY",
+                    courierName = "Aisha Khan (Volunteer Courier #04)",
+                    courierPhone = "+1 (555) 321-7654",
+                    etaMinutes = 22,
+                    specialInstructions = "Please call store manager on arrival for escort to cold storage."
+                ),
+                Donation(
+                    userId = 4,
+                    donorName = "Clover Valley Dairy Co.",
+                    donorNumber = "+1 (555) 678-1234",
+                    foodTitle = "40 Cartons Whole Milk & 30 Yogurt Cups",
+                    category = "DAIRY",
+                    quantity = "40 Liters Milk + 30 Yogurt",
+                    servingsEstimate = 45,
+                    weightKg = 42.0,
+                    foodPresetName = "DAIRY",
+                    preparedTimeMillis = nowMs - 21600000L,
+                    expiryHours = 36,
+                    pickupAddress = "Clover Valley Depot, 910 Industrial Parkway",
+                    pickupLatitude = 37.7550,
+                    pickupLongitude = -122.4050,
+                    status = "AVAILABLE",
+                    specialInstructions = "Requires cooler bags or refrigerated van for transport."
+                ),
+                Donation(
+                    userId = 1,
+                    donorName = "Green Leaf Italian Trattoria",
+                    donorNumber = "+1 (555) 234-8890",
+                    foodTitle = "35 Trays of Baked Vegetarian Lasagna & Garlic Bread",
+                    category = "COOKED_MEALS",
+                    quantity = "35 full portion trays",
+                    servingsEstimate = 35,
+                    weightKg = 18.0,
+                    foodPresetName = "COOKED_MEAL",
+                    preparedTimeMillis = nowMs - 86400000L,
+                    expiryHours = 4,
+                    pickupAddress = "Trattoria Kitchen, 55 Valencia St",
+                    pickupLatitude = 37.7700,
+                    pickupLongitude = -122.4200,
+                    dropAddress = "St. Jude Day Shelter, 1200 4th Ave",
+                    dropLatitude = 37.7780,
+                    dropLongitude = -122.4080,
+                    deliveryProgress = 1.0f,
+                    status = "DELIVERED",
+                    receiverType = "NGO",
+                    receiverName = "Mercy Kitchen Alliance (NGO)",
+                    receiverPhone = "+1 (555) 998-3322",
+                    receiverDetails = "Registered Charity #88219",
+                    dateClaimed = nowMs - 7200000L,
+                    dateDelivered = nowMs - 1800000L,
+                    notes = "Delivered hot and served immediately for dinner service."
                 )
             )
+            db.donationDao().insertDonations(sampleDonations)
 
             // Seed initial impact logs
             db.wasteLogDao().insertWasteLog(
@@ -376,6 +526,9 @@ abstract class FoodDatabase : RoomDatabase() {
                     reason = "Made golden French Toast"
                 )
             )
+            } finally {
+                isSeeding = false
+            }
         }
     }
 }

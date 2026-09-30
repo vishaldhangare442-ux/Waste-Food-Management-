@@ -15,8 +15,20 @@ interface DonationDao {
     @Query("SELECT * FROM donations WHERE userId = :userId ORDER BY dateLogged DESC")
     fun getDonations(userId: Long): Flow<List<Donation>>
 
+    @Query("SELECT * FROM donations ORDER BY dateLogged DESC")
+    fun getAllDonations(): Flow<List<Donation>>
+
+    @Query("SELECT * FROM donations WHERE id = :id LIMIT 1")
+    fun getDonationById(id: Long): Flow<Donation?>
+
+    @Query("SELECT * FROM donations WHERE status != 'AVAILABLE' ORDER BY dateClaimed DESC")
+    fun getActiveDeliveries(): Flow<List<Donation>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDonation(donation: Donation): Long
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertDonations(donations: List<Donation>)
 
     @Update
     suspend fun updateDonation(donation: Donation)

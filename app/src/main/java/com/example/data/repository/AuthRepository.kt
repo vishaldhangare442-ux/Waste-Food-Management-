@@ -21,8 +21,10 @@ class AuthRepository(
         val savedUserId = prefs.getLong("current_user_id", -1L)
         if (savedUserId != -1L) {
             val user = userDao.getUserById(savedUserId)
-            _currentUser.value = user
-            return user
+            if (user != null) {
+                _currentUser.value = user
+                return user
+            }
         }
         return null
     }
@@ -128,6 +130,43 @@ class AuthRepository(
     }
 
     suspend fun quickLoginDemo(): Result<User> {
+        val existing = userDao.getUserByEmail("demo@wastewise.com")
+        if (existing != null) {
+            prefs.edit().putLong("current_user_id", existing.id).apply()
+            _currentUser.value = existing
+            return Result.success(existing)
+        }
         return login("demo@wastewise.com", "Demo123!")
+    }
+
+    suspend fun quickLoginReceiverDemo(): Result<User> {
+        val receiverUser = userDao.getUserByEmail("hope@foodbank.org")
+            ?: User(
+                id = 2L,
+                name = "Hope Harvest Food Bank (NGO)",
+                email = "hope@foodbank.org",
+                passwordHash = "",
+                salt = "",
+                securityQuestion = "What was your first pet's name?",
+                securityAnswerHash = ""
+            ).also { userDao.insertUser(it) }
+
+        prefs.edit().putLong("current_user_id", receiverUser.id).apply()
+        _currentUser.value = receiverUser
+        return Result.success(receiverUser)
+    }
+
+    suspend fun continueAsGuest(): Result<User> {
+        val guest = User(
+            id = 999L,
+            name = "Eco Guest Explorer",
+            email = "guest@foodwaste.org",
+            passwordHash = "",
+            salt = ""
+        )
+        userDao.insertUser(guest)
+        prefs.edit().putLong("current_user_id", guest.id).apply()
+        _currentUser.value = guest
+        return Result.success(guest)
     }
 }

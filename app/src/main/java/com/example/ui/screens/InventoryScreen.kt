@@ -293,6 +293,11 @@ fun InventoryScreen(
                 }
             }
 
+            // Gemini AI Recipe Recommendations
+            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)) {
+                com.example.ui.components.GeminiRecipeSection(viewModel = viewModel)
+            }
+
             // Items List
             if (filteredItems.isEmpty()) {
                 Box(

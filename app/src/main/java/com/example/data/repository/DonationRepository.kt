@@ -5,6 +5,7 @@ import com.example.data.local.WasteLogDao
 import com.example.data.model.CommunityDropOffCenter
 import com.example.data.model.Donation
 import com.example.data.model.WasteLog
+import com.example.data.remote.FirestoreService
 import kotlinx.coroutines.flow.Flow
 
 data class WasteImpactStats(
@@ -23,14 +24,103 @@ data class WasteImpactStats(
 
 class DonationRepository(
     private val donationDao: DonationDao,
-    private val wasteLogDao: WasteLogDao
+    private val wasteLogDao: WasteLogDao,
+    private val firestoreService: FirestoreService = FirestoreService()
 ) {
     fun getDonations(userId: Long): Flow<List<Donation>> = donationDao.getDonations(userId)
+    fun getAllDonations(): Flow<List<Donation>> = donationDao.getAllDonations()
+    fun getActiveDeliveries(): Flow<List<Donation>> = donationDao.getActiveDeliveries()
+    fun getDonationById(id: Long): Flow<Donation?> = donationDao.getDonationById(id)
     fun getWasteLogs(userId: Long): Flow<List<WasteLog>> = wasteLogDao.getWasteLogs(userId)
 
-    suspend fun insertDonation(donation: Donation): Long = donationDao.insertDonation(donation)
-    suspend fun updateDonation(donation: Donation) = donationDao.updateDonation(donation)
+    suspend fun insertDonation(donation: Donation): Long {
+        val id = donationDao.insertDonation(donation)
+        val saved = if (donation.id == 0L) donation.copy(id = id) else donation
+        firestoreService.syncDonation(saved)
+        return id
+    }
+
+    suspend fun updateDonation(donation: Donation) {
+        donationDao.updateDonation(donation)
+        firestoreService.syncDonation(donation)
+    }
+
     suspend fun deleteDonation(donation: Donation) = donationDao.deleteDonation(donation)
+
+    suspend fun claimFoodDonation(
+        donation: Donation,
+        receiverType: String,
+        receiverName: String,
+        receiverPhone: String,
+        receiverDetails: String,
+        dropAddress: String,
+        deliveryMethod: String
+    ) {
+        val updated = donation.copy(
+            status = "CLAIMED",
+            receiverType = receiverType,
+            receiverName = receiverName,
+            receiverPhone = receiverPhone,
+            receiverDetails = receiverDetails,
+            dropAddress = dropAddress.ifBlank { donation.dropAddress },
+            deliveryMethod = deliveryMethod,
+            dateClaimed = System.currentTimeMillis(),
+            deliveryProgress = 0.15f,
+            etaMinutes = if (deliveryMethod == "SELF_PICKUP") 30 else 25
+        )
+        donationDao.updateDonation(updated)
+        firestoreService.syncDonation(updated)
+    }
+
+    suspend fun advanceDelivery(donation: Donation) {
+        val nextStatus: String
+        val nextProgress: Float
+        val nextEta: Int
+        when (donation.status) {
+            "CLAIMED" -> {
+                nextStatus = "OUT_FOR_PICKUP"
+                nextProgress = 0.40f
+                nextEta = 18
+            }
+            "OUT_FOR_PICKUP" -> {
+                nextStatus = "IN_TRANSIT"
+                nextProgress = 0.75f
+                nextEta = 8
+            }
+            "IN_TRANSIT" -> {
+                nextStatus = "DELIVERED"
+                nextProgress = 1.0f
+                nextEta = 0
+            }
+            else -> return
+        }
+
+        val updated = donation.copy(
+            status = nextStatus,
+            deliveryProgress = nextProgress,
+            etaMinutes = nextEta,
+            dateDelivered = if (nextStatus == "DELIVERED") System.currentTimeMillis() else donation.dateDelivered
+        )
+        donationDao.updateDonation(updated)
+        firestoreService.syncDonation(updated)
+
+        if (nextStatus == "DELIVERED") {
+            // Log into impact table
+            val co2 = (donation.weightKg * 2.5).coerceAtLeast(1.0)
+            wasteLogDao.insertWasteLog(
+                WasteLog(
+                    userId = donation.userId,
+                    foodName = donation.foodTitle,
+                    category = donation.category,
+                    quantityWithUnit = donation.quantity,
+                    actionType = "RESCUED",
+                    costAmount = donation.servingsEstimate * 4.50,
+                    co2SavedKg = co2,
+                    reason = "Rescued by ${donation.receiverName} (${donation.receiverType})"
+                )
+            )
+        }
+    }
 
     fun getCommunityCenters(): List<CommunityDropOffCenter> {
         return listOf(

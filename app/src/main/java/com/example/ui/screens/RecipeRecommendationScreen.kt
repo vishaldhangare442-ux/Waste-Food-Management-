@@ -277,6 +277,10 @@ fun RecipeRecommendationScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
+                    item {
+                        com.example.ui.components.GeminiRecipeSection(viewModel = viewModel)
+                    }
+
                     items(recommendedRecipes, key = { it.recipe.id }) { recipeMatch ->
                         RecipeMatchCard(
                             recipeMatch = recipeMatch,

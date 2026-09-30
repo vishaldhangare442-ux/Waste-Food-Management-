@@ -23,19 +23,26 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Diversity3
 import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QuestionMark
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.VolunteerActivism
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +56,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -67,7 +73,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.ReceiverType
 import com.example.ui.theme.ForestGreenPrimary
+import com.example.ui.viewmodel.AppTab
 import com.example.ui.viewmodel.MainViewModel
 
 enum class AuthMode {
@@ -76,12 +84,18 @@ enum class AuthMode {
     FORGOT_PASSWORD
 }
 
+enum class SignupRole {
+    DONOR,
+    RECEIVER
+}
+
 @Composable
 fun AuthScreen(
     viewModel: MainViewModel,
     modifier: Modifier = Modifier
 ) {
     var authMode by remember { mutableStateOf(AuthMode.LOGIN) }
+    var signupRole by remember { mutableStateOf(SignupRole.DONOR) }
     val isAuthLoading by viewModel.isAuthLoading.collectAsState()
     val authError by viewModel.authError.collectAsState()
     val authSuccess by viewModel.authSuccessMessage.collectAsState()
@@ -92,6 +106,7 @@ fun AuthScreen(
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var securityAnswer by remember { mutableStateOf("") }
+    var organizationOrSize by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
 
     var passwordVisible by remember { mutableStateOf(false) }
@@ -102,66 +117,70 @@ fun AuthScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .testTag("auth_screen")
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Branding Icon & Title
-            Box(
-                modifier = Modifier
-                    .size(76.dp)
-                    .clip(CircleShape)
-                    .background(ForestGreenPrimary),
-                contentAlignment = Alignment.Center
+            Surface(
+                shape = CircleShape,
+                color = ForestGreenPrimary,
+                shadowElevation = 4.dp,
+                modifier = Modifier.size(72.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Eco,
-                    contentDescription = "Logo",
-                    tint = Color.White,
-                    modifier = Modifier.size(44.dp)
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Default.Eco,
+                        contentDescription = "FoodWaste Rescue Logo",
+                        tint = Color.White,
+                        modifier = Modifier.size(42.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
-                text = "FoodWaste Manager",
+                text = "FoodWaste Rescue",
                 style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.ExtraBold,
                 color = ForestGreenPrimary
             )
 
             Text(
-                text = "Track your food inventory, save money & rescue meals with smart recipes",
+                text = "Connecting Surplus Food Donors with Communities & Families in Need",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(18.dp))
 
-            // Main Card
+            // Main Auth Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(22.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    // Mode Selector Tabs (Login vs Register)
+                    // Mode Selector Tabs (Sign In vs Sign Up)
                     if (authMode != AuthMode.FORGOT_PASSWORD) {
                         TabRow(
                             selectedTabIndex = if (authMode == AuthMode.LOGIN) 0 else 1,
-                            containerColor = Color.Transparent,
-                            contentColor = MaterialTheme.colorScheme.primary
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(12.dp))
+                                .padding(4.dp)
                         ) {
                             Tab(
                                 selected = authMode == AuthMode.LOGIN,
@@ -170,7 +189,14 @@ fun AuthScreen(
                                     localValidationMsg = null
                                     viewModel.clearAuthMessages()
                                 },
-                                text = { Text("Sign In", fontWeight = FontWeight.SemiBold) }
+                                text = {
+                                    Text(
+                                        text = "Sign In",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                },
+                                modifier = Modifier.testTag("signin_tab")
                             )
                             Tab(
                                 selected = authMode == AuthMode.REGISTER,
@@ -179,17 +205,24 @@ fun AuthScreen(
                                     localValidationMsg = null
                                     viewModel.clearAuthMessages()
                                 },
-                                text = { Text("Register", fontWeight = FontWeight.SemiBold) }
+                                text = {
+                                    Text(
+                                        text = "Sign Up",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp
+                                    )
+                                },
+                                modifier = Modifier.testTag("signup_tab")
                             )
                         }
-                        Spacer(modifier = Modifier.height(18.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
                     } else {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "Reset Password",
+                                text = "Reset Your Password",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -310,21 +343,106 @@ fun AuthScreen(
                                     .fillMaxWidth()
                                     .height(50.dp)
                                     .testTag("login_submit_button"),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = ForestGreenPrimary)
                             ) {
                                 if (isAuthLoading) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
                                 } else {
-                                    Text("Sign In", fontWeight = FontWeight.Bold)
+                                    Text("Sign In to Account", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 }
                             }
                         }
 
                         AuthMode.REGISTER -> {
+                            // Role Selector Card
+                            Text(
+                                text = "I am joining as:",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (signupRole == SignupRole.DONOR) ForestGreenPrimary else MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { signupRole = SignupRole.DONOR }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Restaurant,
+                                            contentDescription = null,
+                                            tint = if (signupRole == SignupRole.DONOR) Color.White else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Column {
+                                            Text(
+                                                "Food Donor",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = if (signupRole == SignupRole.DONOR) Color.White else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                "Restaurant/Pantry",
+                                                fontSize = 9.sp,
+                                                color = if (signupRole == SignupRole.DONOR) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (signupRole == SignupRole.RECEIVER) Color(0xFF1E3A8A) else MaterialTheme.colorScheme.surfaceVariant,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { signupRole = SignupRole.RECEIVER }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.VolunteerActivism,
+                                            contentDescription = null,
+                                            tint = if (signupRole == SignupRole.RECEIVER) Color.White else MaterialTheme.colorScheme.onSurface,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                        Column {
+                                            Text(
+                                                "Food Receiver",
+                                                fontWeight = FontWeight.Bold,
+                                                fontSize = 12.sp,
+                                                color = if (signupRole == SignupRole.RECEIVER) Color.White else MaterialTheme.colorScheme.onSurface
+                                            )
+                                            Text(
+                                                "NGO/Individual",
+                                                fontSize = 9.sp,
+                                                color = if (signupRole == SignupRole.RECEIVER) Color.White.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
                             OutlinedTextField(
                                 value = name,
                                 onValueChange = { name = it; localValidationMsg = null },
-                                label = { Text("Full Name") },
+                                label = { Text(if (signupRole == SignupRole.DONOR) "Your Name / Business Name *" else "Contact Name / Organization *") },
                                 leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
                                 singleLine = true,
                                 modifier = Modifier
@@ -338,7 +456,7 @@ fun AuthScreen(
                             OutlinedTextField(
                                 value = email,
                                 onValueChange = { email = it; localValidationMsg = null },
-                                label = { Text("Email Address") },
+                                label = { Text("Email Address *") },
                                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                                 singleLine = true,
                                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
@@ -353,7 +471,7 @@ fun AuthScreen(
                             OutlinedTextField(
                                 value = password,
                                 onValueChange = { password = it; localValidationMsg = null },
-                                label = { Text("Password (min 6 characters)") },
+                                label = { Text("Password (min 6 characters) *") },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 trailingIcon = {
                                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -383,7 +501,7 @@ fun AuthScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = if (isGoodLength && hasDigit) "Strong Password ✓" else if (isGoodLength) "Good (Add number for extra security)" else "Too short (min 6 chars)",
+                                        text = if (isGoodLength && hasDigit) "Strong Password ✓" else if (isGoodLength) "Good (Add numbers for extra strength)" else "Too short (min 6 characters)",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (isGoodLength && hasDigit) ForestGreenPrimary else Color(0xFFD97706)
                                     )
@@ -395,7 +513,7 @@ fun AuthScreen(
                             OutlinedTextField(
                                 value = confirmPassword,
                                 onValueChange = { confirmPassword = it; localValidationMsg = null },
-                                label = { Text("Confirm Password") },
+                                label = { Text("Confirm Password *") },
                                 leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
                                 visualTransformation = PasswordVisualTransformation(),
                                 singleLine = true,
@@ -408,7 +526,7 @@ fun AuthScreen(
                             OutlinedTextField(
                                 value = securityAnswer,
                                 onValueChange = { securityAnswer = it; localValidationMsg = null },
-                                label = { Text("Security: What was your first pet's name?") },
+                                label = { Text("Security Question: What was your first pet's name? *") },
                                 leadingIcon = { Icon(Icons.Default.QuestionMark, contentDescription = null) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -426,7 +544,13 @@ fun AuthScreen(
                                         password.length < 6 -> localValidationMsg = "Password must be at least 6 characters"
                                         password != confirmPassword -> localValidationMsg = "Passwords do not match"
                                         securityAnswer.isBlank() -> localValidationMsg = "Please provide an answer for password recovery"
-                                        else -> viewModel.register(name, email, password, securityAnswer)
+                                        else -> {
+                                            viewModel.register(name, email, password, securityAnswer) { success ->
+                                                if (success && signupRole == SignupRole.RECEIVER) {
+                                                    viewModel.setTab(AppTab.RECOVER)
+                                                }
+                                            }
+                                        }
                                     }
                                 },
                                 enabled = !isAuthLoading,
@@ -434,12 +558,15 @@ fun AuthScreen(
                                     .fillMaxWidth()
                                     .height(50.dp)
                                     .testTag("register_submit_button"),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (signupRole == SignupRole.DONOR) ForestGreenPrimary else Color(0xFF1E3A8A)
+                                )
                             ) {
                                 if (isAuthLoading) {
                                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
                                 } else {
-                                    Text("Create Account", fontWeight = FontWeight.Bold)
+                                    Text("Complete Sign Up", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                 }
                             }
                         }
@@ -448,7 +575,7 @@ fun AuthScreen(
                             OutlinedTextField(
                                 value = email,
                                 onValueChange = { email = it; localValidationMsg = null },
-                                label = { Text("Your Registered Email") },
+                                label = { Text("Registered Email Address") },
                                 leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth(),
@@ -530,37 +657,62 @@ fun AuthScreen(
 
             Spacer(modifier = Modifier.height(18.dp))
 
-            // Demo Quick Login Button
-            OutlinedButton(
-                onClick = { viewModel.quickDemoLogin() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .testTag("quick_demo_button"),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = ForestGreenPrimary
-                )
+            // Quick Demo & Guest Accounts Section
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             ) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Try Demo Account (Eco Chef Alex)", fontWeight = FontWeight.SemiBold)
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "Or explore instantly with 1-Tap Demo / Guest:",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = { viewModel.quickDemoLogin() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("btn_quick_donor_login"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("🍲 Sign In as Donor", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        OutlinedButton(
+                            onClick = { viewModel.quickDemoReceiverLogin() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .testTag("btn_quick_receiver_login"),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
+                            Text("🤝 Sign In as Receiver", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+
+                    Button(
+                        onClick = { viewModel.continueAsGuest() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("btn_guest_login"),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f))
+                    ) {
+                        Text("⚡ Continue as Guest (Skip Sign In)", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = "Demo login pre-loads sample pantry items and expiring ingredients ready for recipe matching.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
         }
     }
 }
